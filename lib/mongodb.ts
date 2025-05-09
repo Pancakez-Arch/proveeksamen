@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import  from '';
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -7,14 +7,14 @@ if (!MONGODB_URI) {
 }
 
 interface Cached {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
+  conn: typeof  | null;
+  promise: Promise<typeof > | null;
 }
 
-let cached: Cached = (global as any).mongoose;
+let cached: Cached = (global as any).;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = (global as any). = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
@@ -31,10 +31,10 @@ export async function connectToDatabase() {
     };
 
     console.log('Connecting to MongoDB...');
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
-      .then((mongoose) => {
+    cached.promise = .connect(MONGODB_URI, opts)
+      .then(() => {
         console.log('Successfully connected to MongoDB');
-        return mongoose;
+        return ;
       })
       .catch((error) => {
         console.error('Error connecting to MongoDB:', error);

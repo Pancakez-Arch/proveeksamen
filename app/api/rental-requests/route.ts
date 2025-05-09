@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { connectToDatabase } from '@/lib/mongodb';
-import { RentalRequest } from '@/models/RentalRequest';
 import { authOptions } from '../auth/[...nextauth]/route';
+import RentalRequest from '@/app/models/RentalRequest';
 
 export async function GET() {
   try {

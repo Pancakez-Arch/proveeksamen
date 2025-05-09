@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/models/User';
 import bcrypt from 'bcryptjs';
 
@@ -12,16 +11,6 @@ export async function POST(request: Request) {
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user already exists
-    await connectToDatabase();
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User already exists' },
         { status: 400 }
       );
     }
