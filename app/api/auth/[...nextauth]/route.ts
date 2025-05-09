@@ -3,8 +3,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import db from "@/lib/db";
 
 // Define the user type
 interface User {
