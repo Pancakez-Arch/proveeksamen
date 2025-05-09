@@ -6,7 +6,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import CookieConsent from "@/components/cookie-consent"
 import { AuthProvider } from "@/contexts/auth-context"
-import { ThemeProvider } from "./components/ThemeProvider"
+import { ThemeProvider } from 'next-themes'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider>
+        <ThemeProvider attribute="class">
           <AuthProvider>
             <div className="min-h-screen flex flex-col bg-background text-foreground">
               <Navbar />

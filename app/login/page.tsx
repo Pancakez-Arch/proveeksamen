@@ -1,134 +1,85 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
-  const router = useRouter()
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
     try {
-      const success = await login(email, password)
-      if (success) {
-        router.push("/dashboard")
-      } else {
-        setError("Ugyldig e-post eller passord. Prøv igjen.")
+      const res = await signIn('credentials', {
+        email: formData.get('email'),
+        password: formData.get('password'),
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError('Invalid credentials');
+        return;
       }
-    } catch (err) {
-      setError("En feil oppstod. Vennligst prøv igjen senere.")
-    } finally {
-      setIsLoading(false)
+
+      router.push('/admin/rental-requests');
+      router.refresh();
+    } catch (error) {
+      setError('Something went wrong');
     }
-  }
+  };
 
   return (
-    <main className="py-16 md:py-24">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Logg inn</h1>
-            <p className="text-muted-foreground">Logg inn for å se din leiehistorikk og administrere din konto</p>
-          </div>
-
-          <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1">
-                  E-post
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-1">
-                  Passord
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    className="h-4 w-4 text-primary focus:ring-primary border-input rounded"
-                  />
-                  <label htmlFor="remember" className="ml-2 block text-sm">
-                    Husk meg
-                  </label>
-                </div>
-
-                <div className="text-sm">
-                  <Link href="/forgot-password" className="text-primary hover:underline">
-                    Glemt passord?
-                  </Link>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium flex items-center justify-center"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Logger inn...
-                  </>
-                ) : (
-                  "Logg inn"
-                )}
-              </button>
-            </form>
-
-            <div className="mt-6 text-center text-sm">
-              <p>
-                Har du ikke en konto?{" "}
-                <Link href="/register" className="text-primary hover:underline">
-                  Registrer deg
-                </Link>
-              </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+            Sign in to your account
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">Email address</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
             </div>
           </div>
 
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p>For demonstrasjonsformål, bruk hvilket som helst e-postadresse med passordet "password"</p>
+          <div>
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Sign in
+            </button>
           </div>
-        </div>
+        </form>
       </div>
-    </main>
-  )
+    </div>
+  );
 }
