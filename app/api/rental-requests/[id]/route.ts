@@ -1,34 +1,41 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { sendRentalStatusEmail } from '@/lib/email';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectToDatabase } from '@/lib/mongodb';
+import { RentalRequest } from '@/models/RentalRequest';
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    
-    const updatedRequest = await db.rentalRequest.update({
-      where: { id: params.id },
-      data: { status: body.status },
-      include: {
-        equipment: true,
-      },
-    });
+    const { status } = body;
 
-    // Send email notification
-    await sendRentalStatusEmail(
-      updatedRequest.customerEmail,
-      body.status,
-      updatedRequest.equipment.name
-    );
+    await connectToDatabase();
+    const rentalRequest = await RentalRequest.findByIdAndUpdate(
+      params.id,
+      { status },
+      { new: true }
+    ).populate('equipmentId', 'name');
 
-    return NextResponse.json(updatedRequest);
+    if (!rentalRequest) {
+      return NextResponse.json(
+        { error: 'Rental request not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ request: rentalRequest });
   } catch (error) {
     console.error('Error updating rental request:', error);
     return NextResponse.json(
-      { error: 'Failed to update rental request' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

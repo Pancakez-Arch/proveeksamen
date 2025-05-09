@@ -6,6 +6,19 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
+// Define the user type
+interface User {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  role?: string;
+}
+
+// Define the session type
+interface Session {
+  user: User;
+}
+
 export const authOptions: NextAuthOptions = {
   // Use Prisma as the database adapter
   adapter: PrismaAdapter(db),
@@ -64,11 +77,11 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // Add user info to session
     async session({ token, session }) {
-      if (token) {
-        session.user.id = token.id;
+      if (token && session.user) {
+        session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
-        session.user.role = token.role;
+        session.user.role = token.role as string;
       }
       return session;
     },
@@ -82,7 +95,7 @@ export const authOptions: NextAuthOptions = {
 
       if (!dbUser) {
         if (user) {
-          token.id = user?.id;
+          token.id = user.id;
         }
         return token;
       }

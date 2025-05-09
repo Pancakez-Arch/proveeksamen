@@ -1,60 +1,57 @@
 import { NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import RentalRequest from '@/app/models/RentalRequest';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectToDatabase } from '@/lib/mongodb';
+import { RentalRequest } from '@/models/RentalRequest';
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    await connectDB();
-    const body = await request.json();
-    
-    const rentalRequest = await RentalRequest.create({
-      equipmentId: body.equipmentId,
-      startDate: body.startDate,
-      endDate: body.endDate,
-      customerName: body.name,
-      customerEmail: body.email,
-      customerPhone: body.phone,
-      status: 'pending',
-    });
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    return NextResponse.json(rentalRequest);
+    await connectToDatabase();
+    const requests = await RentalRequest.find()
+      .sort({ createdAt: -1 })
+      .populate('equipmentId', 'name');
+
+    return NextResponse.json({ requests });
   } catch (error) {
-    console.error('Error creating rental request:', error);
+    console.error('Error fetching rental requests:', error);
     return NextResponse.json(
-      { error: 'Failed to create rental request' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
-    await connectDB();
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const status = searchParams.get('status') || 'all';
-    const limit = 10;
-    const skip = (page - 1) * limit;
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const query = status === 'all' ? {} : { status };
-    
-    const [requests, total] = await Promise.all([
-      RentalRequest.find(query)
-        .skip(skip)
-        .limit(limit)
-        .populate('equipmentId')
-        .sort({ createdAt: -1 }),
-      RentalRequest.countDocuments(query),
-    ]);
+    const body = await request.json();
+    const { equipmentId, startDate, endDate, customerName, customerEmail, customerPhone } = body;
 
-    return NextResponse.json({
-      requests,
-      totalPages: Math.ceil(total / limit),
+    await connectToDatabase();
+    const rentalRequest = await RentalRequest.create({
+      equipmentId,
+      startDate,
+      endDate,
+      customerName,
+      customerEmail,
+      customerPhone,
+      status: 'pending',
     });
+
+    return NextResponse.json({ request: rentalRequest }, { status: 201 });
   } catch (error) {
-    console.error('Error fetching rental requests:', error);
+    console.error('Error creating rental request:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch rental requests' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar, Package, Clock, User, LogOut } from "lucide-react"
+import { useSession } from 'next-auth/react'
 
 // Mock rental history data
 const rentalHistory = [
@@ -36,20 +37,73 @@ const rentalHistory = [
   },
 ]
 
+interface RentalRequest {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  startDate: string;
+  endDate: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  status: 'pending' | 'approved' | 'denied';
+  createdAt: string;
+}
+
 export default function DashboardPage() {
   const { user, logout, isLoading } = useAuth()
   const router = useRouter()
+  const { data: session, status } = useSession()
+  const [requests, setRequests] = useState<RentalRequest[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
+    if (status === 'unauthenticated') {
+      router.push('/login')
     }
-  }, [user, isLoading, router])
+  }, [status, router])
 
-  if (isLoading || !user) {
+  useEffect(() => {
+    fetchRequests()
+  }, [])
+
+  const fetchRequests = async () => {
+    try {
+      const response = await fetch('/api/rental-requests')
+      const data = await response.json()
+      setRequests(data.requests)
+    } catch (error) {
+      console.error('Error fetching rental requests:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleStatusUpdate = async (requestId: string, newStatus: 'approved' | 'denied') => {
+    try {
+      const response = await fetch(`/api/rental-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update request status')
+      }
+
+      fetchRequests()
+    } catch (error) {
+      console.error('Error updating request status:', error)
+      alert('Failed to update request status. Please try again.')
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
       </div>
     )
   }
@@ -65,7 +119,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold">Mitt Dashboard</h1>
-            <p className="text-muted-foreground">Velkommen tilbake, {user.name}</p>
+            <p className="text-muted-foreground">Velkommen tilbake, {user?.name}</p>
           </div>
           <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
             <LogOut className="h-4 w-4" /> Logg ut
@@ -198,7 +252,7 @@ export default function DashboardPage() {
                     <label className="block text-sm font-medium mb-1">Navn</label>
                     <input
                       type="text"
-                      value={user.name}
+                      value={user?.name}
                       readOnly
                       className="w-full bg-muted border border-input rounded-md px-3 py-2"
                     />
@@ -207,7 +261,7 @@ export default function DashboardPage() {
                     <label className="block text-sm font-medium mb-1">E-post</label>
                     <input
                       type="email"
-                      value={user.email}
+                      value={user?.email}
                       readOnly
                       className="w-full bg-muted border border-input rounded-md px-3 py-2"
                     />

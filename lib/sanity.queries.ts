@@ -1,15 +1,18 @@
 import { client } from "@/sanity/lib/client"
 
 export async function getEmployees() {
-  const query = `*[_type == "employee"] {
-    _id,
-    name,
-    position,
-    "imageUrl": image.asset->url,
-    bio
-  }`
-  
-  return client.fetch(query)
+  return client.fetch(`
+    *[_type == "employee"] {
+      _id,
+      name,
+      position,
+      "image": image.asset->url,
+      bio,
+      email,
+      phone,
+      expertise
+    }
+  `)
 }
 
 export async function getEquipment() {
